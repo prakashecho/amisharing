@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_ami_copy" "encrypted_ami" {
   name              = "encrypted-ami"
-  source_ami_id     = "ami-0ec45b580774622a1"
+  source_ami_id     = "ami-04b70fa74e45c3917"
   source_ami_region = "us-east-1"
   encrypted         = true
   kms_key_id        = "arn:aws:kms:us-east-1:874599947932:key/22ad3ccd-28a1-4d05-ad73-5f284cea93b3"
@@ -101,8 +101,4 @@ resource "aws_kms_key_policy" "key_policy" {
       }
     ]
   })
-}
-
-}
-EOF
 }
