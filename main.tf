@@ -22,11 +22,10 @@ data "aws_ami" "encrypted_ami" {
   }
 }
 
-data "aws_ebs_snapshot" "snapshot" {
-  most_recent = true
+data "aws_snapshot" "snapshot" {
   filter {
-    name   = "volume_id"
-    values = [data.aws_ami.encrypted_ami.block_device_mappings[0].ebs.volume_id]
+    name   = "volume-id"
+    values = [data.aws_ami.encrypted_ami.root_device_name]
   }
 }
 
@@ -34,12 +33,14 @@ resource "null_resource" "share_ami" {
   provisioner "local-exec" {
     command = "aws ec2 modify-image-attribute --image-id ${aws_ami_copy.encrypted_ami.id} --launch-permission \"Add=[{UserId=280435798514}]\""
   }
+  depends_on = [aws_ami_copy.encrypted_ami]
 }
 
 resource "null_resource" "share_snapshot" {
   provisioner "local-exec" {
-    command = "aws ec2 modify-snapshot-attribute --snapshot-id ${data.aws_ebs_snapshot.snapshot.id} --attribute createVolumePermission --operation-type add --user-ids 280435798514"
+    command = "aws ec2 modify-snapshot-attribute --snapshot-id ${data.aws_snapshot.snapshot.id} --attribute createVolumePermission --operation-type add --user-ids 280435798514"
   }
+  depends_on = [data.aws_snapshot.snapshot]
 }
 
 resource "aws_kms_key_policy" "key_policy" {
