@@ -51,4 +51,17 @@ resource "aws_kms_key_policy" "key_policy" {
   "Statement": [
     {
       "Sid": "Allow use of the key",
-      "Effect": "Allow
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::280435798514:root"
+      },
+      "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
