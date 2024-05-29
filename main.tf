@@ -26,7 +26,7 @@ data "aws_ebs_snapshot" "snapshot" {
   most_recent = true
   filter {
     name   = "description"
-    values = [data.aws_ami.encrypted_ami.block_device_mappings[0].ebs.snapshot_id]
+    values = ["*${aws_ami_copy.encrypted_ami.id}*"]
   }
 }
 
@@ -51,17 +51,4 @@ resource "aws_kms_key_policy" "key_policy" {
   "Statement": [
     {
       "Sid": "Allow use of the key",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::280435798514:root"
-      },
-      "Action": [
-        "kms:Decrypt",
-        "kms:DescribeKey"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-EOF
-}
+      "Effect": "Allow
