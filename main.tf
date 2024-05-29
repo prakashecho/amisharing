@@ -25,7 +25,7 @@ data "aws_ami" "encrypted_ami" {
 data "aws_ebs_snapshot" "snapshot" {
   most_recent = true
   filter {
-    name   = "description"
+    name   = "volume_id"
     values = [data.aws_ami.encrypted_ami.block_device_mappings[0].ebs.volume_id]
   }
 }
