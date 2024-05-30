@@ -2,8 +2,8 @@
 name: Terraform Apply
 
 on:
-  push:
-    branches:
+  #push:
+    #branches:
       - main
       
 env:
@@ -21,7 +21,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2
         with:
-          role-to-assume: arn:aws:iam::280435798514:role/gitactions
+          role-to-assume: arn:aws:iam::874599947932:role/gitaws
           role-session-name: github-actions
           aws-region: us-east-1
     
