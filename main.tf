@@ -42,63 +42,56 @@ resource "null_resource" "share_snapshot" {
   }
 }
 
-resource "aws_kms_key_policy" "key_policy" {
-  key_id = "arn:aws:kms:us-east-1:874599947932:key/22ad3ccd-28a1-4d05-ad73-5f284cea93b3"
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Id" : "key-default-1",
-    "Statement" : [
-      {
-        "Sid" : "Enable IAM User Permissions",
-        "Effect" : "Allow",
-        "Principal" : {
-          "AWS" : "*"
-        },
-        "Action" : "kms:*",
-        "Resource" : "*"
+resource "aws_kms_key" "example_key" {
+  description             = "Example KMS key"
+  deletion_window_in_days = 10
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Id": "key-default-1",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::874599947932:root"
       },
-      {
-        "Sid" : "Allow access for Key Administrators",
-        "Effect" : "Allow",
-        "Principal" : {
-          "AWS" : "arn:aws:iam::874599947932:role/KMSAdminRole"
-        },
-        "Action" : "kms:*",
-        "Resource" : "*"
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "Allow use of the key",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::280435798514:root"
       },
-      {
-        "Sid" : "Allow usage for encrypted resources",
-        "Effect" : "Allow",
-        "Principal" : {
-          "AWS" : "*"
-        },
-        "Action" : [
-          "kms:Encrypt",
-          "kms:Decrypt",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:DescribeKey"
-        ],
-        "Resource" : "*"
+      "Action": [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Allow attachment of persistent resources",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::280435798514:root"
       },
-      {
-        "Sid" : "Allow attachment of persistent resources",
-        "Effect" : "Allow",
-        "Principal" : {
-          "AWS" : "*"
-        },
-        "Action" : [
-          "kms:CreateGrant",
-          "kms:ListGrants",
-          "kms:RevokeGrant"
-        ],
-        "Resource" : "*",
-        "Condition" : {
-          "Bool" : {
-            "kms:GrantIsForAWSResource" : "true"
-          }
-        }
-      }
-    ]
-  })
+      "Action": [
+        "kms:CreateGrant",
+        "kms:ListGrants",
+        "kms:RevokeGrant"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+output "kms_key_id" {
+  value = aws_kms_key.example_key.id
 }
