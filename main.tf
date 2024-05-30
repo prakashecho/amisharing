@@ -2,8 +2,9 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Copy the source AMI and encrypt it using the existing KMS key
 resource "aws_ami_copy" "encrypted_ami" {
-  name              = "encrypted-ami"
+  name              = "encrypted-ami1"
   source_ami_id     = "ami-04b70fa74e45c3917"
   source_ami_region = "us-east-1"
   encrypted         = true
@@ -11,40 +12,44 @@ resource "aws_ami_copy" "encrypted_ami" {
 }
 
 output "new_ami_id" {
-  value = aws_ami_copy.encrypted_ami.id
+  value = aws_ami_copy.encrypted_ami1.id
 }
 
-data "aws_ami" "encrypted_ami" {
+# Fetch the newly created encrypted AMI
+data "aws_ami" "encrypted_ami1" {
   most_recent = true
   filter {
     name   = "image-id"
-    values = [aws_ami_copy.encrypted_ami.id]
+    values = [aws_ami_copy.encrypted_ami1.id]
   }
 }
 
+# Fetch the most recent EBS snapshot related to the newly created encrypted AMI
 data "aws_ebs_snapshot" "snapshot" {
   most_recent = true
   filter {
     name   = "description"
-    values = ["*${aws_ami_copy.encrypted_ami.id}*"]
+    values = ["*${aws_ami_copy.encrypted_ami1.id}*"]
   }
 }
 
+# Share the AMI with the specified account
 resource "null_resource" "share_ami" {
   provisioner "local-exec" {
-    command = "aws ec2 modify-image-attribute --image-id ${aws_ami_copy.encrypted_ami.id} --launch-permission \"Add=[{UserId=280435798514}]\""
+    command = "aws ec2 modify-image-attribute --image-id ${aws_ami_copy.encrypted_ami1.id} --launch-permission \"Add=[{UserId=280435798514}]\""
   }
 }
 
+# Share the snapshot with the specified account
 resource "null_resource" "share_snapshot" {
   provisioner "local-exec" {
     command = "aws ec2 modify-snapshot-attribute --snapshot-id ${data.aws_ebs_snapshot.snapshot.id} --attribute createVolumePermission --operation-type add --user-ids 280435798514"
   }
 }
 
-resource "aws_kms_key" "example_key" {
-  description             = "Example KMS key"
-  deletion_window_in_days = 10
+# Update the policy of the existing KMS key to allow usage by another AWS account
+resource "aws_kms_key_policy" "existing_key_policy" {
+  key_id = "arn:aws:kms:us-east-1:874599947932:key/22ad3ccd-28a1-4d05-ad73-5f284cea93b3"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -90,8 +95,4 @@ resource "aws_kms_key" "example_key" {
   ]
 }
 EOF
-}
-
-output "kms_key_id" {
-  value = aws_kms_key.example_key.id
 }
