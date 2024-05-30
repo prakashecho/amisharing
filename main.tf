@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 # Copy the source AMI and encrypt it using the existing KMS key
-resource "aws_ami_copy" "encrypted_ami" {
+resource "aws_ami_copy" "encrypted_ami1" {
   name              = "encrypted-ami1"
   source_ami_id     = "ami-04b70fa74e45c3917"
   source_ami_region = "us-east-1"
