@@ -2,7 +2,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Copy the source AMI and encrypt it using the existingKMS key
+# Copy the source AMI and encrypt it using the existing KMS key
 resource "aws_ami_copy" "encrypted_ami1" {
   name              = "encrypted-ami1"
   source_ami_id     = "ami-0ec45b580774622a1"
@@ -15,41 +15,9 @@ output "new_ami_id" {
   value = aws_ami_copy.encrypted_ami1.id
 }
 
-# Fetch the newly created encrypted AMI
-data "aws_ami" "encrypted_ami1" {
-  most_recent = true
-  filter {
-    name   = "image-id"
-    values = [aws_ami_copy.encrypted_ami1.id]
-  }
-}
-
-# Fetch the most recent EBS snapshot related to the newly created encrypted AMI
-data "aws_ebs_snapshot" "snapshot" {
-  most_recent = true
-  filter {
-    name   = "description"
-    values = ["*${aws_ami_copy.encrypted_ami1.id}*"]
-  }
-}
-
-# Share the AMI with the specified account
-resource "null_resource" "share_ami" {
-  provisioner "local-exec" {
-    command = "aws ec2 modify-image-attribute --image-id ${aws_ami_copy.encrypted_ami1.id} --launch-permission \"Add=[{UserId=280435798514}]\""
-  }
-}
-
-# Share the snapshot with the specified account
-resource "null_resource" "share_snapshot" {
-  provisioner "local-exec" {
-    command = "aws ec2 modify-snapshot-attribute --snapshot-id ${data.aws_ebs_snapshot.snapshot.id} --attribute createVolumePermission --operation-type add --user-ids 280435798514"
-  }
-}
-
 # Update the policy of the existing KMS key to allow usage by another AWS account
 resource "aws_kms_key_policy" "existing_key_policy" {
-  key_id = "arn:aws:kms:us-east-1:874599947932:key/22ad3ccd-28a1-4d05-ad73-5f284cea93b3"
+  key_id = aws_ami_copy.encrypted_ami1.kms_key_id
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -95,4 +63,25 @@ resource "aws_kms_key_policy" "existing_key_policy" {
   ]
 }
 EOF
+}
+
+# Share the AMI with the specified account
+resource "aws_ami_launch_permission" "share_ami" {
+  image_id   = aws_ami_copy.encrypted_ami1.id
+  account_id = "280435798514"
+}
+
+# Fetch the most recent EBS snapshot related to the newly created encrypted AMI
+data "aws_ebs_snapshot" "snapshot" {
+  most_recent = true
+  filter {
+    name   = "description"
+    values = ["*${aws_ami_copy.encrypted_ami1.id}*"]
+  }
+}
+
+# Share the snapshot with the specified account
+resource "aws_ebs_snapshot_permission" "share_snapshot" {
+  snapshot_id = data.aws_ebs_snapshot.snapshot.id
+  account_id  = "280435798514"
 }
